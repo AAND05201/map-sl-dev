@@ -16,33 +16,19 @@
         body, html { height: 100%; margin: 0; padding: 0; font-family: 'Sarabun', sans-serif; }
         #map { height: 100%; width: 100%; z-index: 1; }
         
-        /* สไตล์หลักของหมุดแผนที่ (ปรับขนาดให้สมดุลสำหรับใส่ไอคอนตรงกลาง) */
+        /* สไตล์หลักของหมุดแผนที่ (ปรับให้เล็กลงและแหลมขึ้น) */
         .marker-pin {
-          width: 26px;
-          height: 26px;
-          border-radius: 50% 50% 50% 0;
+          width: 22px; /* ขนาดเล็กลง */
+          height: 22px; /* ขนาดเล็กลง */
+          border-radius: 50% 50% 50% 0; /* ทำให้ปลายแหลม */
           position: absolute;
           transform: rotate(-45deg);
           left: 50%;
           top: 50%;
-          margin: -13px 0 0 -13px;
+          margin: -11px 0 0 -11px; /* ครึ่งหนึ่งของความกว้าง/สูง */
           border: 2px solid white;
           box-shadow: 1px 1px 4px rgba(0,0,0,0.6);
           transition: background-color 0.3s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* หมุนไอคอนข้างในกลับมาให้ตรง */
-        .marker-inner-icon {
-          transform: rotate(45deg);
-          font-size: 11px;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          user-select: none;
         }
 
         /* เงื่อนไขกระพริบเมื่อสถานะ = เข้างาน */
@@ -58,7 +44,7 @@
 
         /* สไตล์จุดพิกัดผู้ใช้งาน (User Location) */
         .user-location-icon div {
-            background-color: #3b82f6;
+            background-color: #3b82f6; /* สีฟ้า */
             width: 16px;
             height: 16px;
             border-radius: 50%;
@@ -100,6 +86,7 @@
 
     <!-- ปุ่มกลับไปตำแหน่งผู้ใช้ (My Location) -->
     <button id="locate-btn" class="absolute bottom-8 right-4 z-[1000] bg-white p-3 rounded-full shadow-lg border border-gray-200 hover:bg-gray-100 flex items-center justify-center cursor-pointer transition" title="ตำแหน่งของฉัน">
+        <!-- Icon เป้าหมาย -->
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
             <circle cx="12" cy="12" r="10"></circle>
             <circle cx="12" cy="12" r="3"></circle>
@@ -123,71 +110,36 @@
         let userLocationMarker = null;
         let userLocationCircle = null;
         
-        // ชุดสีสำหรับหมุด (อ้างอิงตาม App สำรวจ เหมือนเดิม)
-        const appColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
-        const appColorMap = {};
+        // --- ส่วนที่แก้ไข: เปลี่ยนชุดสีมาผูกกับ "ทีม" แทน ---
+        const teamColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#0ea5e9']; // ตัดสีแดงออกเพื่อเก็บไว้ใช้เป็นค่าเริ่มต้น
+        const teamColorMap = {};
 
-        function getAppColor(appName) {
-            if (!appName) return '#6b7280';
-            if (!appColorMap[appName]) {
-                const nextColor = appColors[Object.keys(appColorMap).length % appColors.length];
-                appColorMap[appName] = nextColor;
+        function getTeamColor(teamName) {
+            if (!teamName || teamName.trim() === '') return '#ef4444'; // ถ้าไม่มีทีม (ว่าง) ให้เป็น สีแดง
+            if (!teamColorMap[teamName]) {
+                const nextColor = teamColors[Object.keys(teamColorMap).length % teamColors.length];
+                teamColorMap[teamName] = nextColor;
             }
-            return appColorMap[appName];
+            return teamColorMap[teamName];
         }
 
-        // --- เพิ่มฟังก์ชันเปลี่ยนสัญลักษณ์/ไอคอนตามทีม ---
-        function getTeamSymbol(teamName, status) {
-            // ถ้าสถานะเป็นเสร็จงานแล้ว ให้เปลี่ยนเป็นเครื่องหมายถูกเสมอ
-            if (status === 'เสร็จงาน') {
-                return '✔️';
-            }
-
-            if (!teamName || teamName.trim() === '') {
-                return '❓'; // ถ้ายังไม่มีทีมรับงาน ให้ขึ้นเป็นเครื่องหมายคำถาม
-            }
-
-            // สามารถปรับแต่งเพิ่มทีมตรงนี้ หรือใช้ตัวอักษรย่อตัวแรกก็ได้ครับ
-            switch (teamName.trim()) {
-                case 'ทีม A':
-                    return '🛠️'; // หรือจะเปลี่ยนเป็นตัวย่อ 'A'
-                case 'ทีม B':
-                    return '⚡'; // หรือเปลี่ยนเป็นตัวย่อ 'B'
-                case 'ทีมผู้รับเหมา ก.':
-                    return '👷'; // หรือเปลี่ยนเป็นตัวย่อ 'ก'
-                case 'ทีมสำรวจส่วนกลาง':
-                    return '🗺️'; // หรือเปลี่ยนเป็นตัวย่อ 'ส'
-                default:
-                    // ถ้าไม่มีในเคสที่ระบุ ให้เอาพยางค์แรกของชื่อทีมมาแสดง
-                    return teamName.replace('ทีม', '').trim().charAt(0) || '👥';
-            }
-        }
-
-        // ฟังก์ชันสร้างหน้าตาหมุดแผนที่ (สีตาม App + ไอคอนตรงกลางตาม Team)
-        function createCustomIcon(app, team, status) {
-            let color = getAppColor(app);
+        // ฟังก์ชันสร้างหน้าตาหมุดแผนที่ (ปรับให้ใช้ข้อมูล "ทีม" แทน "แอป")
+        function createCustomIcon(team, status) {
+            let color = getTeamColor(team);
             let extraClass = '';
 
-            // ถ้าเสร็จงานแล้วให้เปลี่ยนพื้นหมุดเป็นสีเทาตามกฎเดิม
             if (status === 'เสร็จงาน') {
-                color = '#9ca3af';
+                color = '#9ca3af'; // สีเทา
             } else if (status === 'เข้างาน') {
                 extraClass = 'blinking-marker';
             }
 
-            // ดึงสัญลักษณ์ของทีมมาแสดงตรงกลางหมุด
-            const symbol = getTeamSymbol(team, status);
-
             return L.divIcon({
                 className: 'custom-leaflet-icon',
-                html: `
-                    <div style="background-color: ${color};" class="marker-pin ${extraClass}">
-                        <div class="marker-inner-icon">${symbol}</div>
-                    </div>
-                `,
-                iconSize: [26, 36], 
-                iconAnchor: [13, 36], 
-                popupAnchor: [0, -32] 
+                html: `<div style="background-color: ${color};" class="marker-pin ${extraClass}"></div>`,
+                iconSize: [22, 30], 
+                iconAnchor: [11, 30], 
+                popupAnchor: [0, -28] 
             });
         }
 
@@ -210,6 +162,7 @@
         function onLocationFound(e) {
             const radius = e.accuracy / 2;
             
+            // ถ้ายังไม่มีจุดผู้ใช้ ให้สร้างใหม่
             if (!userLocationMarker) {
                 userLocationMarker = L.marker(e.latlng, {
                     icon: L.divIcon({
@@ -220,6 +173,7 @@
                     })
                 }).addTo(map);
                 
+                // วงกลมแสดงความแม่นยำ (รัศมีสีฟ้าอ่อน)
                 userLocationCircle = L.circle(e.latlng, radius, {
                     color: '#3b82f6',
                     fillColor: '#3b82f6',
@@ -227,6 +181,7 @@
                     weight: 1
                 }).addTo(map);
             } else {
+                // ถ้ามีแล้ว ให้อัปเดตตำแหน่ง
                 userLocationMarker.setLatLng(e.latlng);
                 userLocationCircle.setLatLng(e.latlng);
                 userLocationCircle.setRadius(radius);
@@ -240,9 +195,12 @@
         // การทำงานของปุ่ม "ตำแหน่งของฉัน"
         document.getElementById('locate-btn').addEventListener('click', () => {
             if (userLocationMarker) {
+                // ซูมไปที่จุดที่มีอยู่แล้ว
                 map.setView(userLocationMarker.getLatLng(), 16);
             } else {
+                // สั่งหาตำแหน่งใหม่
                 map.locate({setView: true, maxZoom: 16, enableHighAccuracy: true});
+                // แสดงข้อความเตือนชั่วคราว
                 const btn = document.getElementById('locate-btn');
                 btn.classList.add('bg-blue-100');
                 setTimeout(() => btn.classList.remove('bg-blue-100'), 1000);
@@ -264,11 +222,11 @@
                 
                 if (isNaN(lat) || isNaN(lng)) return;
 
-                // สร้างหมุดโดยใช้ (App = สี, Team = สัญลักษณ์กลางหมุด, Status = เข้างาน/เสร็จงาน)
-                const icon = createCustomIcon(point.app, point.team, point.status);
+                // --- ส่วนที่แก้ไข: ส่ง point.team ไปให้ createCustomIcon แทน point.app ---
+                const icon = createCustomIcon(point.team, point.status);
                 const marker = L.marker([lat, lng], { icon: icon }).addTo(map);
 
-                marker.bindTooltip(`<b>${point.pea}</b>`, { direction: 'top', offset: [0, -32] });
+                marker.bindTooltip(`<b>${point.pea}</b>`, { direction: 'top', offset: [0, -28] });
 
                 const teamOptions = globalData.teams.map(t => `<option value="${t}" ${point.team === t ? 'selected' : ''}>${t}</option>`).join('');
                 const statusOptions = globalData.statuses.map(s => `<option value="${s}" ${point.status === s ? 'selected' : ''}>${s}</option>`).join('');
@@ -276,7 +234,7 @@
                 // สร้าง URL สำหรับ Google Maps Navigation
                 const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-                // Popup HTML (พร้อมปุ่มคัดลอก PEA, kVA, และปุ่มนำทาง)
+                // แก้ไข Popup HTML (เพิ่ม kVA, ปุ่มนำทาง และ ปุ่มคัดลอก PEA)
                 const popupHtml = `
                     <div class="text-sm">
                         <div class="flex items-center justify-between mb-1 border-b pb-1">
@@ -327,6 +285,7 @@
                 bounds.push([lat, lng]);
             });
 
+            // ปรับกล้องตอนโหลดครั้งแรก (ถ้ายังไม่เคยกดหาตำแหน่งตัวเอง)
             if (bounds.length > 0 && !userLocationMarker) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
@@ -408,8 +367,8 @@
                 
                 const marker = markerLayers[peaId];
                 if (marker) {
-                    // อัปเดตข้อมูลไอคอนใหม่ (ส่งทั้ง App, Team และ Status ล่าสุด)
-                    const newIcon = createCustomIcon(globalData.mapData[pointIndex].app, newTeam, newStatus);
+                    // --- ส่วนที่แก้ไข: ส่ง newTeam ไปให้ createCustomIcon แทนข้อมูล app เดิม ---
+                    const newIcon = createCustomIcon(newTeam, newStatus);
                     marker.setIcon(newIcon);
                     marker.closePopup();
                 }
@@ -421,6 +380,7 @@
                 teams: ['ทีม A', 'ทีม B', 'ทีมผู้รับเหมา ก.', 'ทีมสำรวจส่วนกลาง'],
                 statuses: ['รอดำเนินการ', 'เข้างาน', 'เสร็จงาน', 'ติดปัญหา'],
                 mapData: [
+                    // เพิ่มจำลองข้อมูล kva เข้าไปใน Mock data
                     { pea: "67-028288", kva: "50", name: "บ.อากาศ ม.18", poles: "23", caseVal: "ไม่มีมิเตอร์ไฟสาธารณะ, ไม่มีสายดับ", lat: "13.7380", lng: "100.5590", app: "GIS Streetlight", status: "รอดำเนินการ", team: "" },
                     { pea: "TR-1002", kva: "100", name: "หน้าห้าง", poles: "2", caseVal: "หม้อแปลงชำรุด", lat: "13.7443", lng: "100.5299", app: "PEA-GIS", status: "เข้างาน", team: "ทีม A" },
                     { pea: "TR-1003", kva: "250", name: "ลาดพร้าว 71", poles: "8", caseVal: "เปลี่ยนเสา", lat: "13.8041", lng: "100.6074", app: "SurveyMaster", status: "เสร็จงาน", team: "ทีม B" }
@@ -430,6 +390,7 @@
 
         // ฟังก์ชันสำหรับคัดลอกข้อความลง Clipboard
         window.copyToClipboard = function(text, buttonElement) {
+            // สร้าง element จำลองเพื่อคัดลอก (รองรับ iframe และ browser รุ่นเก่า)
             const el = document.createElement('textarea');
             el.value = text;
             el.setAttribute('readonly', '');
@@ -440,6 +401,7 @@
             document.execCommand('copy');
             document.body.removeChild(el);
 
+            // เปลี่ยนข้อความในปุ่มชั่วคราวเพื่อแสดงให้เห็นว่าก็อปปี้แล้ว
             const originalHtml = buttonElement.innerHTML;
             buttonElement.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-green-600" viewBox="0 0 20 20" fill="currentColor">
@@ -448,6 +410,7 @@
                 <span class="text-green-600 font-semibold">คัดลอกแล้ว!</span>
             `;
             
+            // กลับเป็นเหมือนเดิมหลังจาก 2 วินาที
             setTimeout(() => {
                 buttonElement.innerHTML = originalHtml;
             }, 2000);
