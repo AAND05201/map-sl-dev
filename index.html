@@ -377,6 +377,34 @@
             };
         }
 
+        // ฟังก์ชันสำหรับคัดลอกข้อความลง Clipboard
+        window.copyToClipboard = function(text, buttonElement) {
+            // สร้าง element จำลองเพื่อคัดลอก (รองรับ iframe และ browser รุ่นเก่า)
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.setAttribute('readonly', '');
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            // เปลี่ยนข้อความในปุ่มชั่วคราวเพื่อแสดงให้เห็นว่าก็อปปี้แล้ว
+            const originalHtml = buttonElement.innerHTML;
+            buttonElement.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-green-600 font-semibold">คัดลอกแล้ว!</span>
+            `;
+            
+            // กลับเป็นเหมือนเดิมหลังจาก 2 วินาที
+            setTimeout(() => {
+                buttonElement.innerHTML = originalHtml;
+            }, 2000);
+        };
+
         document.addEventListener("DOMContentLoaded", () => {
             initMap();
             fetchData();
