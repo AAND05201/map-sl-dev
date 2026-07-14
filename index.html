@@ -232,10 +232,18 @@
                 // สร้าง URL สำหรับ Google Maps Navigation
                 const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
-                // แก้ไข Popup HTML (เพิ่ม kVA และ ปุ่มนำทาง)
+                // แก้ไข Popup HTML (เพิ่ม kVA, ปุ่มนำทาง และ ปุ่มคัดลอก PEA)
                 const popupHtml = `
                     <div class="text-sm">
-                        <h3 class="font-bold text-lg text-blue-700 mb-1 border-b pb-1">PEA: ${point.pea}</h3>
+                        <div class="flex items-center justify-between mb-1 border-b pb-1">
+                            <h3 class="font-bold text-lg text-blue-700">PEA: ${point.pea}</h3>
+                            <button onclick="copyToClipboard('${point.pea}', this)" class="flex items-center text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded transition-colors" title="คัดลอกรหัส PEA">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <span>คัดลอก</span>
+                            </button>
+                        </div>
                         <p class="mb-1"><span class="font-semibold text-gray-600">ขนาด kVA หม้อแปลง:</span> <span class="text-red-600 font-bold">${point.kva || '-'}</span></p>
                         <p class="mb-1"><span class="font-semibold text-gray-600">สถานที่:</span> ${point.name || '-'}</p>
                         <p class="mb-1"><span class="font-semibold text-gray-600">จำนวนเสา:</span> ${point.poles || '-'}</p>
